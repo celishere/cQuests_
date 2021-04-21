@@ -38,8 +38,8 @@ final class PickupQuest {
     private array $playerEid = [];
 
     public function __construct() {
-        self::$item_pos_1 = new Vector3(-101.5, 68.8, -76.5);
-        self::$item_pos_2 = new Vector3(-103.5, 68.8, -76.5);
+        self::$item_pos_1 = new Vector3(-101.5, 69, -76.5);
+        self::$item_pos_2 = new Vector3(-103.5, 69, -76.5);
     }
 
     /**
