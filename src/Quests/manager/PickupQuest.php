@@ -35,6 +35,7 @@ final class PickupQuest {
     private static Vector3 $item_pos_2;
 
     private array $players = [];
+    private array $playerEid = [];
 
     public function __construct() {
         self::$item_pos_1 = new Vector3(-101.5, 68.8, -76.5);
@@ -114,6 +115,10 @@ final class PickupQuest {
                         $session->save();
 
                         unset($this->players[$player->getUniqueId()->toString()]);
+
+                        if (isset($this->playerEid[$player->getUniqueId()->toString()])) {
+                            $this->forceClose($player, $this->playerEid[$player->getUniqueId()->toString()]);
+                        }
                         return;
                     }
                 }
@@ -233,14 +238,26 @@ final class PickupQuest {
         $packet = FloatingText::createPacket((self::$item_pos_2)->add(0.0, 1.2), $eid, "Получи");
         $player->dataPacket($packet);
 
-        Main::getInstance()->getScheduler()->scheduleDelayedTask(new ClosureTask(function () use ($player, $eidList): void {
-            if ($player->isOnline()) {
-                foreach ($eidList as $id) {
-                    $packet = PacketTool::createRemovePacket($id);
+        $this->playerEid[$player->getUniqueId()->toString()] = $eidList;
 
-                    $player->dataPacket($packet);
-                }
-            }
+        Main::getInstance()->getScheduler()->scheduleDelayedTask(new ClosureTask(function () use ($player, $eidList): void {
+            $this->forceClose($player, $eidList);
         }), 20 * 10);
+    }
+
+    /**
+     * @param Player $player
+     * @param array $eidList
+     */
+    private function forceClose(Player $player, array $eidList): void {
+        if ($player->isOnline()) {
+            foreach ($eidList as $id) {
+                $packet = PacketTool::createRemovePacket($id);
+
+                $player->dataPacket($packet);
+            }
+
+            unset($this->playerEid[$player->getUniqueId()->toString()]);
+        }
     }
 }
