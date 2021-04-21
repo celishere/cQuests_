@@ -154,7 +154,7 @@ final class PickupQuest {
             $player->sendMessage(TextFormat::AQUA . 'Информация о текущем квесте:');
         }
 
-        $player->sendMessage($quest['name']);
+        $player->sendMessage(TextFormat::colorize($quest['name']));
     }
 
     /**
