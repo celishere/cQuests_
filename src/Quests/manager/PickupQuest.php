@@ -34,16 +34,32 @@ final class PickupQuest {
     private static Vector3 $item_pos_1;
     private static Vector3 $item_pos_2;
 
+    private array $players = [];
+
     public function __construct() {
         self::$item_pos_1 = new Vector3(-101.5, 68.8, -76.5);
         self::$item_pos_2 = new Vector3(-103.5, 68.8, -76.5);
     }
 
     /**
-     * @param int $type
      * @return array
      */
-    public function randomizeQuestByType(int $type): array {
+    public function randomizeQuest(): array {
+        $type = mt_rand(1, 1);
+
+        switch ($type) {
+            case QuestType::TYPE_ITEM:
+                $questId = mt_rand(1, 1);
+
+                switch ($questId) {
+                    case 1:
+                        return [
+                            'name' => 'Принеси &aБулыжник &7x&f64 &fи получи &aЖелезную кирку &7x&f1',
+                            'get' => new QuestType(QuestType::TYPE_ITEM, Item::get(Item::COBBLESTONE, 0, 64)->jsonSerialize(), 64),
+                            'reward' => new QuestReward(QuestReward::TYPE_ITEM, Item::get(Item::IRON_PICKAXE)->jsonSerialize(), 1)
+                        ];
+                }
+        }
         return [
             'name' => 'test',
             'get' => new QuestType(QuestType::TYPE_ITEM, Item::get(Item::STONE, 0, 16)->jsonSerialize(), 16),
@@ -60,13 +76,87 @@ final class PickupQuest {
         if (!empty($session->quests)) {
             $quest = $session->quests;
 
+            $get = QuestType::fromArray($quest['get']);
+            $reward = QuestReward::fromArray($quest['reward']);
+
             $save = false;
+
+            $getItemData = $get->getData();
+
+            if (is_array($getItemData) and $get->getType() === QuestType::TYPE_ITEM) {
+                $getItem = Item::jsonDeserialize($getItemData);
+                $inv = $player->getInventory();
+                $hand = $inv->getItemInHand();
+
+                if ($hand->equals($getItem)) {
+                    if ($hand->getCount() >= $getItem->getCount()) {
+                        $newCount = $hand->getCount() - $getItem->getCount();
+
+                        if ($newCount > 0) {
+                            $inv->setItemInHand(Item::get($hand->getId(), $hand->getDamage(), $newCount));
+                        }
+
+                        $rewardItemData = $reward->getData();
+
+                        if (is_array($rewardItemData) and $reward->getType() === QuestReward::TYPE_ITEM) {
+                            $rewardItem = Item::jsonDeserialize($rewardItemData);
+
+                            if ($inv->canAddItem($rewardItem)) {
+                                $inv->addItem($rewardItem);
+                            } else {
+                                $player->getLevel()->dropItem($player, $rewardItem);
+                            }
+                        }
+
+                        $player->sendMessage(TextFormat::GREEN . 'Квест выполнен! Награда была выдана.');
+
+                        $session->quests = [];
+                        $session->save();
+
+                        unset($this->players[$player->getUniqueId()->toString()]);
+                        return;
+                    }
+                }
+            }
         } else {
-            $quest = $this->randomizeQuestByType(0);
+            $quest = $this->randomizeQuest();
 
             $save = true;
         }
 
+        if (!isset($this->players[$player->getUniqueId()->toString()])) {
+            $this->players[$player->getUniqueId()->toString()] = true;
+
+            $this->createHolo($player, $quest);
+        }
+
+        if ($save) {
+            /** @var QuestType $saveGet */
+            $saveGet = $quest['get'];
+
+            $quest['get'] = $saveGet->toArray();
+
+            /** @var QuestReward $saveGet */
+            $saveReward = $quest['reward'];
+
+            $quest['reward'] = $saveReward->toArray();
+
+            $session->quests = $quest;
+            $session->save();
+
+            $player->sendMessage(TextFormat::GREEN . 'Вы взяли новый квест!');
+        } else {
+            $player->sendMessage(TextFormat::AQUA . 'Информация о текущем квесте:');
+        }
+
+        $player->sendMessage($quest['name']);
+    }
+
+    /**
+     * @param Player $player
+     * @param array $quest
+     */
+    private function createHolo(Player $player, array $quest): void {
         /** @var QuestType $get */
         $get = $quest['get'];
         $getItemData = $get->getData();
@@ -104,7 +194,7 @@ final class PickupQuest {
         $eid = Entity::$entityCount++;
         $eidList[] = $eid;
 
-        $packet = FloatingText::createPacket((self::$item_pos_1)->add(0.0, 0.6), $eid, TextFormat::GRAY . "x". $get->getCount());
+        $packet = FloatingText::createPacket((self::$item_pos_1)->add(0.0, 0.6), $eid, TextFormat::GRAY . "x" . $get->getCount());
         $player->dataPacket($packet);
 
         $eid = Entity::$entityCount++;
@@ -134,7 +224,7 @@ final class PickupQuest {
         $eid = Entity::$entityCount++;
         $eidList[] = $eid;
 
-        $packet = FloatingText::createPacket((self::$item_pos_2)->add(0.0, 0.6), $eid, TextFormat::GRAY . "x". $reward->getCount());
+        $packet = FloatingText::createPacket((self::$item_pos_2)->add(0.0, 0.6), $eid, TextFormat::GRAY . "x" . $reward->getCount());
         $player->dataPacket($packet);
 
         $eid = Entity::$entityCount++;
@@ -152,10 +242,5 @@ final class PickupQuest {
                 }
             }
         }), 20 * 10);
-
-        if ($save) {
-            $session->quests = $quest;
-            $session->save();
-        }
     }
 }

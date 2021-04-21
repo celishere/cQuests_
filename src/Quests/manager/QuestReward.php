@@ -55,4 +55,18 @@ final class QuestReward {
     public function getData() {
         return $this->data;
     }
+
+    /**
+     * @return array
+     */
+    public function toArray(): array {
+        return ['type' => $this->getType(), 'count' => $this->getCount(), 'data' => $this->data];
+    }
+
+    /**
+     * @return $this
+     */
+    public static function fromArray(array $data): self {
+        return new QuestReward($data['type'], $data['data'], $data['count']);
+    }
 }
