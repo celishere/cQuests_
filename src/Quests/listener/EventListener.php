@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace Quests\listener;
 
+use pocketmine\event\Listener;
+
 use pocketmine\event\entity\EntityDamageByEntityEvent;
 use pocketmine\event\entity\EntityDamageEvent;
-use pocketmine\event\Listener;
+
 use pocketmine\Player;
+
 use Quests\Main;
 
 /**

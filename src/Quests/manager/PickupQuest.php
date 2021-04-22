@@ -59,13 +59,10 @@ final class PickupQuest {
                             'get' => new QuestType(QuestType::TYPE_ITEM, Item::get(Item::COBBLESTONE, 0, 64)->jsonSerialize(), 64),
                             'reward' => new QuestReward(QuestReward::TYPE_ITEM, Item::get(Item::IRON_PICKAXE)->jsonSerialize(), 1)
                         ];
+                    case 2:
+
                 }
         }
-        return [
-            'name' => 'test',
-            'get' => new QuestType(QuestType::TYPE_ITEM, Item::get(Item::STONE, 0, 16)->jsonSerialize(), 16),
-            'reward' => new QuestReward(QuestReward::TYPE_ITEM, Item::get(Item::LEATHER_BOOTS)->jsonSerialize(), 16)
-        ]; //todo
     }
 
     /**
@@ -162,20 +159,28 @@ final class PickupQuest {
      * @param array $quest
      */
     private function createHolo(Player $player, array $quest): void {
-        /** @var QuestType $get */
         $get = $quest['get'];
-        $getItemData = $get->getData();
 
-        if (is_array($getItemData) and $get->getType() === QuestType::TYPE_ITEM) {
+        if ($get instanceof QuestType) {
+            $getItemData = $get->getData();
+            $type = $get->getType();
+            $count = $get->getCount();
+        } else {
+            $getItemData = $get['data'];
+            $type = $get['type'];
+            $count = $get['count'];
+        }
+
+        if (is_array($getItemData) and $type === QuestType::TYPE_ITEM) {
             $getItem = Item::jsonDeserialize($getItemData);
 
             $name = 'Принеси';
         } else {
-            if ($get->getType() === QuestType::TYPE_BREAK) {
+            if ($type === QuestType::TYPE_BREAK) {
                 $getItem = Item::get(Item::BRICK);
 
                 $name = 'Сломай';
-            } else if ($get->getType() === QuestType::TYPE_KILL) {
+            } else if ($type === QuestType::TYPE_KILL) {
                 $getItem = Item::get(Item::IRON_SWORD);
 
                 $name = 'Убей';
@@ -199,7 +204,7 @@ final class PickupQuest {
         $eid = Entity::$entityCount++;
         $eidList[] = $eid;
 
-        $packet = FloatingText::createPacket((self::$item_pos_1)->add(0.0, 0.6), $eid, TextFormat::GRAY . "x" . $get->getCount());
+        $packet = FloatingText::createPacket((self::$item_pos_1)->add(0.0, 0.6), $eid, TextFormat::GRAY . "x" . $count);
         $player->dataPacket($packet);
 
         $eid = Entity::$entityCount++;
@@ -208,11 +213,19 @@ final class PickupQuest {
         $packet = FloatingText::createPacket((self::$item_pos_1)->add(0.0, 1.2), $eid, $name);
         $player->dataPacket($packet);
 
-        /** @var QuestReward $reward */
         $reward = $quest['reward'];
-        $rewardItemData = $reward->getData();
 
-        if (is_array($rewardItemData) and $reward->getType() === QuestReward::TYPE_ITEM) {
+        if ($reward instanceof QuestReward) {
+            $rewardItemData = $reward->getData();
+            $type = $reward->getType();
+            $count = $reward->getCount();
+        } else {
+            $rewardItemData = $reward['data'];
+            $type = $reward['type'];
+            $count = $reward['count'];
+        }
+
+        if (is_array($rewardItemData) and $type === QuestReward::TYPE_ITEM) {
             $rewardItem = Item::jsonDeserialize($rewardItemData);
         } else {
             $rewardItem = Item::get(Item::EMERALD);
@@ -229,7 +242,7 @@ final class PickupQuest {
         $eid = Entity::$entityCount++;
         $eidList[] = $eid;
 
-        $packet = FloatingText::createPacket((self::$item_pos_2)->add(0.0, 0.6), $eid, TextFormat::GRAY . "x" . $reward->getCount());
+        $packet = FloatingText::createPacket((self::$item_pos_2)->add(0.0, 0.6), $eid, TextFormat::GRAY . "x" . $count);
         $player->dataPacket($packet);
 
         $eid = Entity::$entityCount++;
