@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Quests;
 
 use pocketmine\plugin\PluginBase;
+
 use Quests\listener\EventListener;
 use Quests\manager\PickupQuest;
 

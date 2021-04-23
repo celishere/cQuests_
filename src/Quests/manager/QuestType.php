@@ -29,6 +29,7 @@ final class QuestType {
      * QuestType constructor.
      * @param int $type
      * @param int|string|array|int[] $data
+     * @param int $count
      */
     public function __construct(int $type, $data, int $count) {
         $this->type = $type;
